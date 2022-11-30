@@ -1,5 +1,9 @@
 package main
 
+// 2022-11-30 bjb: this is the 2021 day1 puzzle, used an example for the
+// project skeleton. once the 2022 day1 puzzle is released I'll replace this
+// with the real stuff.
+
 class day1 extends TestSuite:
   case class IncFlux(value: Int, previous: Int):
     def next(x: Int): IncFlux =

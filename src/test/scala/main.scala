@@ -9,3 +9,6 @@ import java.nio.charset.Charset
 trait TestSuite extends CatsEffectSuite with ScalaCheckEffectSuite:
   def read(name: String): String =
     Files.readString(Paths.get(s"./inputs/${name}"), Charset.forName("UTF-8"))
+
+  def lines(name: String): List[String] =
+    read(name).trim.split("\n").toList

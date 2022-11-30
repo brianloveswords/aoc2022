@@ -17,7 +17,7 @@ class day1 extends TestSuite:
     part1(list)
 
   lazy val ex = List(199, 200, 208, 210, 200, 207, 240, 269, 260, 263)
-  lazy val input = read("day1.txt").trim.split("\n").toList.map(_.toInt)
+  lazy val input = lines("day1.txt").map(_.toInt)
 
   test("part1") {
     assertEquals(part1(ex), 7)

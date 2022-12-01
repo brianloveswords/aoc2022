@@ -5,30 +5,50 @@ package main
 // with the real stuff.
 
 class day1 extends TestSuite:
-  case class IncFlux(value: Int, previous: Int):
-    def next(x: Int): IncFlux =
-      if x > previous
-      then IncFlux(value + 1, x)
-      else IncFlux(value, x)
+  case class Elf(id: Int, calories: Int)
 
-  def part1(xs: List[Int]): Int =
-    val initialState = IncFlux(0, xs.head)
-    val result = xs.tail.foldLeft(initialState)((acc, x) => acc.next(x))
-    result.value
+  lazy val ex = """
+1000
+2000
+3000
 
-  def part2(xs: List[Int]): Int =
-    val list = xs.sliding(3).map(_.sum).toList
-    part1(list)
+4000
 
-  lazy val ex = List(199, 200, 208, 210, 200, 207, 240, 269, 260, 263)
-  lazy val input = lines("day1.txt").map(_.toInt)
+5000
+6000
+
+7000
+8000
+9000
+
+10000
+"""
+
+  def parse(s: String): List[Elf] = s.trim
+    .split("\n\n")
+    .map(
+      _.split("\n").toList
+        .map(_.toInt)
+        .sum
+    )
+    .toList
+    .zipWithIndex
+    .map((c, id) => Elf(id + 1, c))
+
+  def part1(elves: List[Elf]): Elf =
+    elves.maxBy(_.calories)
+
+  def part2(elves: List[Elf]): Int =
+    elves.sortBy(_.calories * -1).take(3).map(_.calories).sum
 
   test("part1") {
-    assertEquals(part1(ex), 7)
-    println(part1(input))
+    val elves = parse(read("day1.txt"))
+    assertEquals(part1(parse(ex)), Elf(4, 24000))
+    println(part1(elves))
   }
 
   test("part2") {
-    assertEquals(part2(ex), 5)
-    println(part2(input))
+    val elves = parse(read("day1.txt"))
+    assertEquals(part2(parse(ex)), 45000)
+    println(part2(elves))
   }

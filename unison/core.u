@@ -1,0 +1,28 @@
+Text.Extra.splitText : Text -> Text -> [Text]
+Text.Extra.splitText s t =
+  splitSize = Text.size s
+  splitChars = Text.toCharList s
+  go buf work rem result =
+    if List.size buf == splitSize
+    then
+      if Text.fromCharList buf == s
+      then go [] [] rem (result :+ Text.fromCharList work)
+      else go (List.drop 1 buf) (work ++ (List.take 1 buf)) rem result
+    else
+      match List.head rem with
+        Some a ->
+          go (buf :+ a) work (List.drop 1 rem) result
+        None ->
+          result :+ (Text.fromCharList work ++ Text.fromCharList buf)
+
+  if s == "" then bug "splitText: must provide a string to split on"
+  else go [] [] (Text.toCharList t) []
+
+test> check (Universal.eq (splitText "bc" "abcd") ["a", "d"])
+test> check (Universal.eq (splitText "cool" "") [""])
+
+
+
+Nat.Extra.parseNat: Text ->{Abort} Nat
+Nat.Extra.parseNat i = Nat.fromText i |> Optional.toAbort
+

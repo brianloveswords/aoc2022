@@ -1,0 +1,39 @@
+update
+update
+add
+ui
+view List.sortWith
+view List.sortWit
+view List.sortBy
+add
+ls
+add
+view List.maximum
+find : (a -> b) -> (b -> c) -> (a -> c)
+view Abort
+find : Text -> Optional Int
+find : Text -> Option alInt
+find : Text -> Option Int
+find : Text -> Int
+find : Text -> Nat
+edit List.Extra.textListEq 
+add
+ls
+add
+find : Text -> [Char]
+find : a -> [a] -> [a]
+find split
+find : Text -> Char -> a
+find : Text -> Char -> *
+find : Text -> Char -> ?
+find : Text -> Char
+find : Text -> Char -> (List Text)
+find : Text -> Char -> List[Text]
+find : Text -> Char -> List Text
+find : Text -> Text
+find : Text -> Text -> List Text
+find : String -> String -> String
+find : String -> String
+find String -> String
+?
+ui

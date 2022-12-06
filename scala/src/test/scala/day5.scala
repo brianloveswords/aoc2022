@@ -86,22 +86,7 @@ class day5 extends TestSuite:
         .map((v, i) => (i + 1, v.reverse))
         .toMap
       SupplyArea(result)
-
-  def prepare(input: String): (SupplyArea, Seq[MoveInstruction]) =
-    val parts = input.split("\n\n")
-    require(parts.size == 2, s"expected exactly 2 parts")
-
-    val stacks = parts(0)
-    val instructions = parts(1)
-    (SupplyArea.parse(stacks), MoveInstruction.parseSeq(instructions))
-
-  def part1(input: String): SupplyMessage =
-    val (s, i) = prepare(input)
-    s.move(i, CrateMover9000).message
-
-  def part2(input: String): SupplyMessage =
-    val (s, i) = prepare(input)
-    s.move(i, CrateMover9001).message
+  end SupplyArea
 
   //
   // tests
@@ -120,6 +105,22 @@ move 1 from 1 to 2
   """
 
   val input = read("day5.txt")
+
+  def prepare(input: String): (SupplyArea, Seq[MoveInstruction]) =
+    val parts = input.split("\n\n")
+    require(parts.size == 2, s"expected exactly 2 parts")
+
+    val stacks = parts(0)
+    val instructions = parts(1)
+    (SupplyArea.parse(stacks), MoveInstruction.parseSeq(instructions))
+
+  def part1(input: String): SupplyMessage =
+    val (s, i) = prepare(input)
+    s.move(i, CrateMover9000).message
+
+  def part2(input: String): SupplyMessage =
+    val (s, i) = prepare(input)
+    s.move(i, CrateMover9001).message
 
   test("part 1") {
     assertEquals(part1(ex), SupplyMessage("CMZ"))

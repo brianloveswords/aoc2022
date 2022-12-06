@@ -1,11 +1,10 @@
 package main
 
 class day5 extends TestSuite:
-  import Model.*
-
   enum Model:
     case CrateMover9000
     case CrateMover9001
+  import Model.*
 
   case class Crate(id: Char)
   object Crate:

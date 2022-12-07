@@ -7,7 +7,11 @@ class day6 extends TestSuite:
     .zipWithIndex
     .find(_._1 == window)
     .map(_ + _)
-    .get
+    .getOrElse(
+      throw new NoSuchElementException(
+        s"could not find start-of-packet marker; window=${window}"
+      )
+    )
 
   lazy val input = read("day6.txt")
 

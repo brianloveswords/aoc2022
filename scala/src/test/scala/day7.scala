@@ -90,7 +90,6 @@ object Filesystem:
       else
         history.head match
           case s"$$ cd ${path}" =>
-            // println(s"command!!: ${path}")
             val newCwd = path match
               case "/"  => Vector.empty
               case ".." => cwd.dropRight(1)
@@ -98,16 +97,13 @@ object Filesystem:
             go(history.drop(1), newCwd, fs)
 
           case s"$$ ls" =>
-            // println(s"listing: ${cwd}")
             go(history.drop(1), cwd, fs)
 
           case s"dir ${name}" =>
-            // println(s"directory ${name}")
             val newFs = fs.addObject(cwd, name, dir())
             go(history.drop(1), cwd, newFs)
 
           case s"${size} ${name}" =>
-            // println(s"file: ${name} (${size})")
             val newFs = fs.addObject(cwd, name, file(size.toInt))
             go(history.drop(1), cwd, newFs)
     go(

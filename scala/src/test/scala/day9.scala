@@ -1,6 +1,16 @@
 package main
 
 class day9 extends TestSuite:
+  enum Direction:
+    case X
+    case N
+    case NE
+    case E
+    case SE
+    case S
+    case SW
+    case W
+    case NW
 
   enum Move(val n: Int):
     case Up(x: Int) extends Move(x)
@@ -34,6 +44,7 @@ class day9 extends TestSuite:
 
     def parseSeq(s: String): Seq[Move] =
       s.trim.split("\n").map(parse).toSeq
+  end Move
 
   enum Equality:
     case Eq
@@ -54,7 +65,7 @@ class day9 extends TestSuite:
 
     def -(that: Pos): Pos = Pos(x - that.x, y - that.y)
 
-    def stepTo(pos: Pos): Pos = move(directionTo(pos))
+    def approach(pos: Pos): Pos = move(directionTo(pos))
 
     def move(where: Direction): Pos = where match
       case X  => this
@@ -94,30 +105,10 @@ class day9 extends TestSuite:
         case (Gt, Lt) => NW
         case (Gt, Gt) => SW
 
-  enum Direction:
-    case X
-    case N
-    case NE
-    case E
-    case SE
-    case S
-    case SW
-    case W
-    case NW
-
   case class Rope(knots: Seq[Pos]):
-    @annotation.targetName("moveAllMoves")
-    def trail(moves: Seq[Move]): Seq[Rope] =
+    def recordAllMoves(moves: Seq[Move]): Seq[Rope] =
       val directions = moves.flatMap(_.toDirections)
       directions.scanLeft(this)(_ move _)
-
-    @annotation.targetName("moveAllMoves")
-    def moveAll(moves: Seq[Move]): Rope =
-      moveAll(moves.flatMap(_.toDirections))
-
-    @annotation.targetName("moveAllDirections")
-    def moveAll(directions: Seq[Direction]): Rope =
-      directions.foldLeft(this)(_ move _)
 
     def move(direction: Direction): Rope =
       val newHead = knots.head.move(direction)
@@ -129,20 +120,12 @@ class day9 extends TestSuite:
           val nextPos =
             if lastPos.isTouching(currentPos)
             then currentPos
-            else currentPos.stepTo(lastPos)
+            else currentPos.approach(lastPos)
           (nextPos :: newKnots, nextPos)
         }
       Rope(newHead :: newTail.reverse)
 
   object Rope:
-    @annotation.targetName("applyVariadic")
-    def apply(knots: Pos*): Rope =
-      Rope(knots)
-
-    @annotation.targetName("applyVariadicPos")
-    def apply(knots: (Int, Int)*): Rope =
-      Rope(knots.map(Pos.apply))
-
     def of(n: Int): Rope =
       Rope(Seq.fill(n)(Pos(0, 0)))
 
@@ -177,15 +160,15 @@ U 20
   test("part1") {
     val rope = Rope.of(2)
     val moves = Move.parseSeq(puzzle)
-    val trail = rope.trail(moves)
-    val tails = trail.map(_.knots(1))
-    println(tails.toSet.size)
+    val allRopes = rope.recordAllMoves(moves)
+    val tailKnots = allRopes.map(_.knots(1))
+    println(tailKnots.toSet.size)
   }
 
   test("part2") {
     val rope = Rope.of(10)
     val moves = Move.parseSeq(puzzle)
-    val trail = rope.trail(moves)
-    val tails = trail.map(_.knots(9))
-    println(tails.toSet.size)
+    val allRopes = rope.recordAllMoves(moves)
+    val tailKnots = allRopes.map(_.knots(9))
+    println(tailKnots.toSet.size)
   }

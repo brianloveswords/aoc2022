@@ -41,9 +41,10 @@ class day8 extends TestSuite:
         trees
           .foldLeft(empty) { (acc, next) =>
             acc.flatMap { (score) =>
+              val newScore = score + 1
               if height > next.height
-              then Right(score + 1)
-              else Left(score + 1)
+              then Right(newScore)
+              else Left(newScore)
             }
           }
           .fold(id, id)
@@ -53,10 +54,10 @@ class day8 extends TestSuite:
         * getScore(left)
         * getScore(right)
 
-    lazy val isVisible: Boolean =
-      def maxHeight(trees: Seq[Tree]): Int =
-        trees.map(_.height).foldLeft(-1)(math.max)
+    private def maxHeight(trees: Seq[Tree]): Int =
+      trees.map(_.height).foldLeft(-1)(math.max)
 
+    lazy val isVisible: Boolean =
       val height = tree.height
 
       height > maxHeight(up)
@@ -64,7 +65,7 @@ class day8 extends TestSuite:
       || height > maxHeight(left)
       || height > maxHeight(right)
 
-    lazy val display: String =
+    lazy val debug: String =
       def treeList(trees: Seq[Tree]): String = trees.map(_.height).mkString("")
       s"""
       |ViewPath: ${tree.height} @ (${pos.x}, ${pos.y})
@@ -74,21 +75,28 @@ class day8 extends TestSuite:
       |  right: ${treeList(right)}
       """.trim.stripMargin
 
+    lazy val display: String =
+      if isVisible
+      then s"${tree.height}"
+      else "."
+
   case class TreeGrid(grid: Map[Position, Tree]):
-    private def getAllInDirection(
-        pos: Position,
-        direction: Direction
-    ): Seq[Tree] = getAllInDirection(pos.move(direction), direction, Seq.empty)
+    private var posDirectionCache: Map[(Position, Direction), List[Tree]] =
+      Map.empty
 
     private def getAllInDirection(
         pos: Position,
-        direction: Direction,
-        acc: Seq[Tree]
-    ): Seq[Tree] =
-      grid.get(pos) match
-        case None => acc
-        case Some(tree) =>
-          getAllInDirection(pos.move(direction), direction, acc.appended(tree))
+        direction: Direction
+    ): List[Tree] = posDirectionCache.get((pos, direction)) match
+      case Some(cached) => cached
+      case None =>
+        val nextPos = pos.move(direction)
+        grid.get(nextPos) match
+          case None => Nil
+          case Some(tree) =>
+            val result = tree :: getAllInDirection(nextPos, direction)
+            posDirectionCache += (pos, direction) -> result
+            result
 
     lazy val toViewPaths: Seq[ViewPath] =
       grid.toSeq.sortBy(_._1).map { (pos, tree) =>
@@ -101,6 +109,23 @@ class day8 extends TestSuite:
           right = getAllInDirection(pos, Direction.Right)
         )
       }
+
+    lazy val showCandidates: String =
+      val paths = toViewPaths
+      val mostScenicPos = paths.map(p => (p.pos, p.scenicScore)).maxBy(_._2)._1
+      val result = paths
+        .sortBy(_.pos)
+        .groupBy(_.pos.y)
+        .toSeq
+        .sortBy(_._1)
+        .map(_._2)
+        .map(_.map { v =>
+          if v.pos == mostScenicPos
+          then ansiReset + ansiBold + ansiGreen + v.display + ansiReset + ansiDim
+          else v.display
+        }.mkString(""))
+        .mkString("\n")
+      ansiDim + result + ansiReset
 
   object TreeGrid:
     def parse(s: String): TreeGrid =
@@ -178,8 +203,19 @@ class day8 extends TestSuite:
       Position(1, 0),
       Position(2, 0)
     )
+    val expected = Seq(
+      Position(0, 0),
+      Position(1, 0),
+      Position(2, 0),
+      Position(0, 1),
+      Position(1, 1),
+      Position(2, 1),
+      Position(0, 2),
+      Position(1, 2),
+      Position(2, 2)
+    )
     val result = positions.sorted
-    println(result)
+    assertEquals(result, expected)
   }
 
   test("part1") {
@@ -190,7 +226,7 @@ class day8 extends TestSuite:
     assertEquals(result, expected)
   }
 
-  test("part2".ignore) {
+  test("part2") {
     val grid = TreeGrid.parse(puzzle)
     val paths = grid.toViewPaths
     val result = paths.map(_.scenicScore).max
@@ -198,8 +234,7 @@ class day8 extends TestSuite:
     assertEquals(result, expected)
   }
 
-  // test("for fun") {
-  //   val grid = TreeGrid.parse(puzzle)
-  //   val paths = grid.toViewPaths
-  //   println("ok")
-  // }
+  test("for fun") {
+    val grid = TreeGrid.parse(puzzle)
+    println(grid.showCandidates)
+  }

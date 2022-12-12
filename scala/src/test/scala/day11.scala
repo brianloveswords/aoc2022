@@ -4,31 +4,27 @@ class day11 extends TestSuite:
   import Operand.*
   import BinaryOp.*
   import DivisibleBy.*
-  import WorryStyle.*
+  import WorryMode.*
 
-  enum WorryStyle:
+  enum WorryMode:
     case Relaxed
     case Stressed(n: Int)
 
     def inspect(item: Item): Item = this match
       case Relaxed     => Item(item.worryLevel / 3)
       case Stressed(n) => Item(item.worryLevel % n)
-  end WorryStyle
+  end WorryMode
 
   //
 
-  case class Item private (worryLevel: Long):
+  case class Item(worryLevel: Long):
     def debug: String = worryLevel.toString
 
   object Item:
-    @annotation.targetName("applyLong")
-    def apply(n: Long): Item = new Item(n)
-
-    @annotation.targetName("applyInt")
     def apply(n: Int): Item = new Item(n.toLong)
 
     def vec(xs: Int*): Vector[Item] = xs.map(Item.apply).toVector
-    def parseStartingItems(s: String): Vector[Item] =
+    def parseInput(s: String): Vector[Item] =
       val parts = s.toLowerCase.split("items:").toSeq
       require(parts.size == 2, s"expected exactly 2 parts, got: ${parts}")
       parts(1)
@@ -46,21 +42,22 @@ class day11 extends TestSuite:
       case s"monkey ${id}:" => MonkeyId(id.toInt)
       case otherwise =>
         throw IllegalArgumentException(s"could not parse: ${otherwise}")
+
     def parseFromTestCase(s: String): (Boolean, MonkeyId) =
       s.toLowerCase.trim.replace("\\s+", " ") match
         case s"if ${bool}: throw to monkey ${id}" =>
           (bool.toBoolean, MonkeyId(id.toInt))
         case otherwise =>
           throw IllegalArgumentException(s"could not parse: ${otherwise}")
+
   //
 
   case class DivisibleBy(n: Int):
-    def apply(other: Long): Boolean = other % n == 0
-    def apply(other: Int): Boolean = other % n == 0
+    def apply(other: Item): Boolean = other.worryLevel % n == 0
     def debug: String = s"divisible by ${n}"
 
   object DivisibleBy:
-    def parseVerbose(s: String): DivisibleBy = s.toLowerCase.trim match
+    def parseInput(s: String): DivisibleBy = s.toLowerCase.trim match
       case s"test: divisible by ${n}" => DivisibleBy(n.toInt)
       case otherwise =>
         throw IllegalArgumentException(s"cannot parse: ${otherwise}")
@@ -110,7 +107,7 @@ class day11 extends TestSuite:
         case "+" => Add(a, b)
         case "*" => Mult(a, b)
 
-    def parseVerbose(s: String): BinaryOp =
+    def parseInput(s: String): BinaryOp =
       val parts = s.toLowerCase.trim.split("operation: new = ").toSeq
       require(parts.size == 2, s"expected 2 parts, got: ${parts}")
       parse(parts(1))
@@ -124,12 +121,12 @@ class day11 extends TestSuite:
       ifTrue: MonkeyId,
       ifFalse: MonkeyId
   ):
-    def apply(item: Item): Toss =
+    def apply(item: Item): MonkeyThrow =
       val monkeyId =
-        if divisibleBy(item.worryLevel)
+        if divisibleBy(item)
         then ifTrue
         else ifFalse
-      Toss(monkeyId, item)
+      MonkeyThrow(monkeyId, item)
 
     def debug: String =
       s"""${divisibleBy.debug}
@@ -143,7 +140,7 @@ class day11 extends TestSuite:
         line1: String,
         line2: String
     ): TestCase =
-      val divisibleBy = DivisibleBy.parseVerbose(divisibleByLine)
+      val divisibleBy = DivisibleBy.parseInput(divisibleByLine)
       val (bool1, id1) = MonkeyId.parseFromTestCase(line1)
       val (bool2, id2) = MonkeyId.parseFromTestCase(line2)
       val (trueId, falseId) = (bool1, bool2) match
@@ -159,7 +156,7 @@ class day11 extends TestSuite:
 
   //
 
-  case class Toss(monkeyId: MonkeyId, item: Item)
+  case class MonkeyThrow(monkeyId: MonkeyId, item: Item)
 
   //
 
@@ -170,25 +167,25 @@ class day11 extends TestSuite:
       .take(2)
       .product
 
-    private lazy val stressed: WorryStyle =
+    private lazy val stressed: WorryMode =
       val value = monkeys
         .map(_.testCase.divisibleBy.n)
         .toSet
         .product
-      WorryStyle.Stressed(value)
+      Stressed(value)
 
-    def relaxedRounds(n: Int): Round = advanceRounds(n, WorryStyle.Relaxed)
+    def relaxedRounds(n: Int): Round = advanceRounds(n, WorryMode.Relaxed)
 
     def stressedRounds(n: Int): Round = advanceRounds(n, stressed)
 
-    private def advanceRounds(n: Int, worryStyle: WorryStyle): Round =
+    private def advanceRounds(n: Int, worryMode: WorryMode): Round =
       require(n >= 0, "n must be >= 0")
-      Range(0, n).foldLeft(this)((acc, _) => acc.nextRound(worryStyle))
+      (0 until n).foldLeft(this)((acc, _) => acc.nextRound(worryMode))
 
-    private def nextRound(worryStyle: WorryStyle): Round =
+    private def nextRound(worryMode: WorryMode): Round =
       def catchAll(
           monkeys: Vector[Monkey],
-          tossList: List[Toss]
+          tossList: List[MonkeyThrow]
       ): Vector[Monkey] = monkeys.map { m =>
         tossList.foldLeft(m)(_ catchItem _)
       }
@@ -198,7 +195,7 @@ class day11 extends TestSuite:
         remaining.headOption match
           case None => done
           case Some(m) =>
-            val (nextM, tossList) = m.takeAllTurns(worryStyle)
+            val (nextM, tossList) = m.takeAllTurns(worryMode)
             val nextDone = catchAll(done, tossList) :+ nextM
             val nextRemaining = catchAll(remaining.drop(1), tossList)
             go(nextDone, nextRemaining)
@@ -224,26 +221,26 @@ class day11 extends TestSuite:
       testCase: TestCase,
       inspections: Int = 0
   ):
-    def catchItem(t: Toss): Monkey =
+    def catchItem(t: MonkeyThrow): Monkey =
       if t.monkeyId == id
       then copy(items = items.appended(t.item))
       else this
 
-    private def inspectItem(item: Item, worryStyle: WorryStyle): Item =
+    private def inspectItem(item: Item, worryMode: WorryMode): Item =
       val worryLevel = item.worryLevel
       val a1 = operation.a.fold(worryLevel)
       val b1 = operation.b.fold(worryLevel)
       val nextLevel = operation match
         case Add(a, b)  => a1 + b1
         case Mult(a, b) => a1 * b1
-      worryStyle.inspect(Item(nextLevel))
+      worryMode.inspect(Item(nextLevel))
 
-    def takeAllTurns(worryStyle: WorryStyle): (Monkey, List[Toss]) =
-      val empty: List[Toss] = List.empty
+    def takeAllTurns(worryMode: WorryMode): (Monkey, List[MonkeyThrow]) =
+      val empty: List[MonkeyThrow] = List.empty
       val newInspections = items.size + inspections
       val tossList = items
         .foldLeft(empty) { (acc, item) =>
-          val nextItem = inspectItem(item, worryStyle)
+          val nextItem = inspectItem(item, worryMode)
           testCase(nextItem) :: acc
         }
         .reverse
@@ -266,8 +263,8 @@ class day11 extends TestSuite:
       require(parts.size == 6, s"expected exactly 6 parts: got ${parts}")
 
       val id = MonkeyId.parseLabel(parts(0))
-      val items = Item.parseStartingItems(parts(1))
-      val operation = BinaryOp.parseVerbose(parts(2))
+      val items = Item.parseInput(parts(1))
+      val operation = BinaryOp.parseInput(parts(2))
       val testCase = TestCase.parseParts(parts(3), parts(4), parts(5))
 
       Monkey(id, items, operation, testCase)
@@ -313,21 +310,21 @@ Monkey 3:
   test("Item.parseVec") {
     val input = "Starting items: 79, 98"
     val expected = Item.vec(79, 98)
-    val result = Item.parseStartingItems(input)
+    val result = Item.parseInput(input)
     assertEquals(result, expected)
   }
 
   test("DivisibleBy.parse") {
     val input = "  Test: divisible by 23"
     val expected = DivisibleBy(23)
-    val result = DivisibleBy.parseVerbose(input)
+    val result = DivisibleBy.parseInput(input)
     assertEquals(result, expected)
   }
 
   test("BinaryOp.parseVerbose") {
     val input = "  Operation: new = old * 19"
     val expected = Mult(Old, Number(19))
-    val result = BinaryOp.parseVerbose(input)
+    val result = BinaryOp.parseInput(input)
     assertEquals(result, expected)
   }
 
